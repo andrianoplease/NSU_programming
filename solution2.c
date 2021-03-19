@@ -20,10 +20,10 @@ int main() {
 	int lines_amount = 0;
 	fscanf(input, "%d", &lines_amount);
 
-	char *identifiers[MAX_LINES_AMOUNT];
+	char *variables[MAX_LINES_AMOUNT];
 	char *values[MAX_LINES_AMOUNT];
 	for (int i = 0; i < lines_amount; i++) {
-		fscanf(input, "%s %s", (char *)(identifiers + i), (char *)(values + i));
+		fscanf(input, "%s %s", (char *)(variables + i), (char *)(values + i));
 	}
 
 	char expression[MAX_EXPRESSION_LENGTH];
@@ -37,7 +37,7 @@ int main() {
 	}
 
 	if (is_simple_expression(expression, 0, 0, 0) == 1) {
-		fprintf(output, "%s", replace_identifiers(expression, identifiers, values, lines_amount));
+		fprintf(output, "%s", replace_identifiers(expression, variables, values, lines_amount));
 	}
 	else {
 		fprintf(output, "INCORRECT");
