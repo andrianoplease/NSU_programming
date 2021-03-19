@@ -6,13 +6,13 @@
 #include <string.h>
 #include <ctype.h>
 
-int is_simple_expression(char*, int, int, int);
-char *replace_identifiers(char*, char**, char**, int);
+int is_simple_expression(char *, int, int, int);
+char *replace_identifiers(char *, char **, char **, int);
 
 int main() {
 	FILE *input, *output;
 	input = fopen("input.txt", "r");
-	if (input== NULL) {
+	if (input == NULL) {
 		printf("Can't open file input.txt");
 		return 1;
 	}
@@ -23,7 +23,7 @@ int main() {
 	char *identifiers[MAX_LINES_AMOUNT];
 	char *values[MAX_LINES_AMOUNT];
 	for (int i = 0; i < lines_amount; i++) {
-		fscanf(input, "%s %s", (char*)(identifiers + i), (char*)(values + i));
+		fscanf(input, "%s %s", (char *)(identifiers + i), (char *)(values + i));
 	}
 
 	char expression[MAX_EXPRESSION_LENGTH];
@@ -48,8 +48,8 @@ int main() {
 
 int is_simple_expression(char *expression, int open_brackets_count, int close_brackets_count, int signs_count) {
 	int tail_length = 0;
-	
-	if(expression[0] == '(') {
+
+	if (expression[0] == '(') {
 		open_brackets_count++;
 		tail_length = strlen(expression);
 
@@ -88,7 +88,7 @@ int is_simple_expression(char *expression, int open_brackets_count, int close_br
 				if (expression[i] == ')') {
 					close_brackets_count++;
 					if (i == tail_length - 1) {
-						if (open_brackets_count == close_brackets_count &&  open_brackets_count == signs_count) {
+						if (open_brackets_count == close_brackets_count && open_brackets_count == signs_count) {
 							return 1;
 						}
 						else {
@@ -154,7 +154,7 @@ int is_simple_expression(char *expression, int open_brackets_count, int close_br
 		}
 		else {
 			for (int i = 1; i < tail_length; i++) {
-				if (isalpha(expression[i]) || isdigit(expression[i]) || expression[i] == '_') {				
+				if (isalpha(expression[i]) || isdigit(expression[i]) || expression[i] == '_') {
 					if (i == tail_length - 1) {
 						if (open_brackets_count == 0 && close_brackets_count == 0 && signs_count == 0) {
 							return 1;
@@ -174,7 +174,7 @@ int is_simple_expression(char *expression, int open_brackets_count, int close_br
 						return is_simple_expression(expression + 1 + i, open_brackets_count, close_brackets_count, signs_count);
 					}
 				}
-				else if (expression[i] == ')'){
+				else if (expression[i] == ')') {
 					return is_simple_expression(expression + i, open_brackets_count, close_brackets_count, signs_count);
 				}
 				else {
@@ -191,20 +191,20 @@ int is_simple_expression(char *expression, int open_brackets_count, int close_br
 
 char *replace_identifiers(char *expression, char **identifiers, char **values, int lines_amount) {
 	for (int i = 0; i < lines_amount; i++) {
-		if(expression[0] != '('){
+		if (expression[0] != '(') {
 			break;
 		}
 
-		char* substr = strstr(expression, (char*)(identifiers + i));
+		char *substr = strstr(expression, (char *)(identifiers + i));
 		while (substr != NULL) {
 			if (isdigit(*(substr - 1)) == 0 && isalpha(*(substr - 1)) == 0) {
-				int len1 = strlen((char*)(identifiers));
-				int len2 = strlen((char*)(values + i));
+				int len1 = strlen((char *)(identifiers + i));
+				int len2 = strlen((char *)(values + i));
 				if (len1 != len2) {
 					memmove(substr + len2, substr + len1, strlen(substr + len1) + 1);
 				}
 				memcpy(substr, values + i, len2);
-				substr = strstr(expression, (char*)(identifiers + i));
+				substr = strstr(expression, (char *)(identifiers + i));
 			}
 		}
 	}
