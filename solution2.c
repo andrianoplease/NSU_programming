@@ -189,24 +189,35 @@ int is_simple_expression(char *expression, int open_brackets_count, int close_br
 	return 0;
 }
 
-char *replace_identifiers(char *expression, char **identifiers, char **values, int lines_amount) {
+char *replace_identifiers(char *expression, char **variables, char **values, int lines_amount) {
 	for (int i = 0; i < lines_amount; i++) {
 		if (expression[0] != '(') {
 			break;
 		}
 
-		char *substr = strstr(expression, (char *)(identifiers + i));
-		while (substr != NULL) {
-			if (isdigit(*(substr - 1)) == 0 && isalpha(*(substr - 1)) == 0) {
-				int len1 = strlen((char *)(identifiers + i));
-				int len2 = strlen((char *)(values + i));
+		char *substr = strstr(expression, (char *)(variables));
+		
+		while (1) {
+			substr = strstr(substr, (char *)(variables));
+			if (substr == NULL) {
+				break;
+			}
+
+			int len1 = strlen((char *)(variables));
+			int len2 = strlen((char *)(values));
+
+			if (isdigit(*(substr - 1)) == 0 && isalpha(*(substr - 1)) == 0 && isalpha(*(substr + len1)) == 0 && isdigit(*(substr + len1)) == 0 && *(substr + len1) != '_') {
 				if (len1 != len2) {
-					memmove(substr + len2, substr + len1, strlen(substr + len1) + 1);
+					memcpy(substr + len2, substr + len1, strlen(substr));
 				}
-				memcpy(substr, values + i, len2);
-				substr = strstr(expression, (char *)(identifiers + i));
+				memcpy(substr, values, len2);
+			}
+			else {
+				substr++;
 			}
 		}
+		variables++;
+		values++;
 	}
 	return expression;
 }
