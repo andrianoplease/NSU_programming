@@ -7,9 +7,10 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-int is_simple_expression(char *, int, int, int);
+char *has_first_bracket(char *, int);
+int is_simple_expression(char *, int, int, int, int);
 char *replace_variables(char *, char **, char **, int);
-double calculate_expression(char *, int);
+double calculate_expression(char *);
 int digits_count(int);
 
 int main() {
@@ -38,166 +39,138 @@ int main() {
 		printf("Can't open file output.txt");
 		return 1;
 	}
-	int exprlen = strlen(expression);
-	if (is_simple_expression(expression, 0, 0, 0) == 1) {
-		char* expr = replace_variables(expression, variables, values, lines_amount);
-		fprintf(output, "%lf", calculate_expression(expr, exprlen));
+
+	int expression_length = strlen(expression);
+	if (has_first_bracket(expression, expression_length) == "YES") {
+		if (is_simple_expression(expression, expression_length, 0, 0, 0) == 1) {
+			replace_variables(expression, variables, values, lines_amount);
+			int i = 0;
+			for (; i < expression_length; i++) {
+				if (isalpha(expression[i])) {
+					break;
+				}
+			}
+			if (i == expression_length) {
+				fprintf(output, "%lf\n", calculate_expression(expression));
+				fprintf(output, "%s", expression);
+			}
+			else {
+				fprintf(output, "%s", expression);
+			}
+		}
+		else {
+			fprintf(output, "INCORRECT");
+		}
 	}
-	else {
+	else if (has_first_bracket(expression, expression_length) == "INCORRECT") {
 		fprintf(output, "INCORRECT");
 	}
+	else {
+		replace_variables(expression, variables, values, lines_amount);
+		fprintf(output, "%s", expression);
+	}
+
 	fclose(output);
 	return 0;
 }
 
-int is_simple_expression(char *expression, int open_brackets_count, int close_brackets_count, int signs_count) {
-	int tail_length = 0;
-
-	if (expression[0] == '(') {
-		open_brackets_count++;
-		tail_length = strlen(expression);
-
-		if (tail_length == 1) {
-			return 0;
+char *has_first_bracket(char *expression, int expression_length) {
+	if (*expression == '(') {
+		return "YES";
+	}
+	else if(isdigit(*expression)){
+		if (digits_count(atoi(expression)) == expression_length) {
+			return expression;
 		}
 		else {
-			for (int i = 1; i < tail_length; i++) {
-				if (expression[i] == '(') {
-					open_brackets_count++;
-					if (i == tail_length - 1) {
-						return 0;
-					}
-					continue;
-				}
-				else {
-					return is_simple_expression(expression + i, open_brackets_count, close_brackets_count, signs_count);
-				}
-			}
+			return "INCORRECT";
 		}
 	}
-	else if (expression[0] == ')') {
-		close_brackets_count++;
-		tail_length = strlen(expression);
+	else if (isalpha(*expression)) {
+		int count = 0;
+		for (int i = 0; i < expression_length; i++) {
+			if (isalpha(expression[i]) || isdigit(expression[i]) || expression[i] == '_') {
+				count++;
+			}
+		}
+		if (count == expression_length) {
+			return expression;
+		}
+		else {
+			return "INCORRECT";
+		}
+	}
+}
 
-		if (tail_length == 1) {
-			if (open_brackets_count == close_brackets_count && open_brackets_count == signs_count) {
-				return 1;
+int is_simple_expression(char *expression, int expression_length, int open_brackets_count, int close_brackets_count, int signs_count) {
+
+	for (int i = 0; i < expression_length; i++) {
+		if (expression[i] == '(') {	
+			open_brackets_count++;
+			continue;
+		}
+		if (isdigit(expression[i])) {
+			i += digits_count(atoi(expression + i));
+		}
+		else if (isalpha(expression[i])) {
+			while(isalpha(expression[i]) || isdigit(expression[i]) || expression[i] == '_') {
+					i++;
+			}
+		}
+		else {
+			return 0;
+		}
+
+		if (expression[i] == ')') {
+			close_brackets_count++;
+				while (i != expression_length - 1 && expression[i] == ')') {
+					i++;
+					if (expression[i] == ')') {
+						close_brackets_count++;
+					}
+				}
+				if (i == expression_length - 1 && open_brackets_count == close_brackets_count && close_brackets_count == signs_count) {
+					return 1;
+				}
+		}
+			if (expression[i] == '+' ||
+				expression[i] == '-' ||
+				expression[i] == '*' ||
+				expression[i] == '/') {
+
+				signs_count++;
+				return is_simple_expression(expression + i + 1, expression_length - 1 - i, open_brackets_count, close_brackets_count, signs_count);
 			}
 			else {
 				return 0;
 			}
-		}
-		else {
-			for (int i = 1; i < tail_length; i++) {
-				if (expression[i] == ')') {
-					close_brackets_count++;
-					if (i == tail_length - 1) {
-						if (open_brackets_count == close_brackets_count && open_brackets_count == signs_count) {
-							return 1;
-						}
-						else {
-							return 0;
-						}
-					}
-					continue;
-				}
-				else if (expression[i] == '+' || expression[i] == '-' || expression[i] == '*' || expression[i] == '/') {
-					signs_count++;
-					if (tail_length - i == 1) {
-						return 0;
-					}
-					else {
-						return is_simple_expression(expression + 1 + i, open_brackets_count, close_brackets_count, signs_count);
-					}
-				}
-				else {
-					return 0;
-				}
-			}
-		}
 	}
-	else if (isdigit(expression[0])) {
-		tail_length = strlen(expression);
-
-		if (tail_length == 1) {
-			return 0;
-		}
-		else {
-			for (int i = 1; i < tail_length; i++) {
-				if (isdigit(expression[i])) {
-					if (i == tail_length - 1) {
-						if (open_brackets_count == 0 && close_brackets_count == 0 && signs_count == 0) {
-							return 1;
-						}
-						else {
-							return 0;
-						}
-					}
-					continue;
-				}
-				else if (expression[i] == '+' || expression[i] == '-' || expression[i] == '*' || expression[i] == '/') {
-					signs_count++;
-					if (tail_length - i == 1 || expression[i + 1] == ')') {
-						return 0;
-					}
-					else {
-						return is_simple_expression(expression + 1 + i, open_brackets_count, close_brackets_count, signs_count);
-					}
-				}
-				else {
-					return is_simple_expression(expression + i, open_brackets_count, close_brackets_count, signs_count);
-				}
-			}
-		}
-	}
-	else if (isalpha(expression[0])) {
-		tail_length = strlen(expression);
-
-		if (tail_length == 1) {
-			return 0;
-		}
-		else {
-			for (int i = 1; i < tail_length; i++) {
-				if (isalpha(expression[i]) || isdigit(expression[i]) || expression[i] == '_') {
-					if (i == tail_length - 1) {
-						if (open_brackets_count == 0 && close_brackets_count == 0 && signs_count == 0) {
-							return 1;
-						}
-						else {
-							return 0;
-						}
-					}
-					continue;
-				}
-				else if (expression[i] == '+' || expression[i] == '-' || expression[i] == '*' || expression[i] == '/') {
-					signs_count++;
-					if (tail_length - i == 1) {
-						return 0;
-					}
-					else {
-						return is_simple_expression(expression + 1 + i, open_brackets_count, close_brackets_count, signs_count);
-					}
-				}
-				else if (expression[i] == ')') {
-					return is_simple_expression(expression + i, open_brackets_count, close_brackets_count, signs_count);
-				}
-				else {
-					return 0;
-				}
-			}
-		}
+	if (open_brackets_count == close_brackets_count && close_brackets_count == signs_count) {
+		return 1;
 	}
 	else {
 		return 0;
 	}
-	return 0;
 }
 
 char *replace_variables(char *expression, char **variables, char **values, int lines_amount) {
-	for (int i = 0; i < lines_amount; i++) {
-		if (expression[0] != '(') {
-			break;
+	int expression_length = strlen(expression);
+
+	if (expression[0] != '(') {
+		for (int j = 0; j < lines_amount; j++) {
+			char *substr = strstr(expression, (char *)(variables + j));
+			int variable_length = strlen((char *)(variables + j));
+			if (substr != NULL && expression_length == variable_length) {
+				memcpy(expression, (char *)(values + j), sizeof(expression));
+				return expression;
+			}
+			else {
+				return expression;
+			}
 		}
+	}
+
+	for (int i = 0; i < lines_amount; i++) {
 
 		char *substr = strstr(expression, (char *)(variables));
 		
@@ -226,31 +199,32 @@ char *replace_variables(char *expression, char **variables, char **values, int l
 	return expression;
 }
 
-double calculate_expression(char *expression, int exprlen) {
+double calculate_expression(char *computable_expression) {
 	double values[MAX_EXPRESSION_LENGTH];
 	char operations[MAX_EXPRESSION_LENGTH];
 	int operations_iterator = 0;
 	int values_iterator = 0;
 	char *substr = operations;
+	int computable_expression_length = strlen(computable_expression);
 
-	for (int i = 0; i < exprlen; i++) {
-		if (isdigit(expression[i])) {	
-			int value = atoi(expression + i);
+	for (int i = 0; i < computable_expression_length; i++) {
+		if (isdigit(computable_expression[i])) {	
+			int value = atoi(computable_expression + i);
 			int len = digits_count(value);
 			values[values_iterator] = value;
 			values_iterator++;
 			i += len;
 		}
 		
-		if (expression[i] == '+' || expression[i] == '-' || expression[i] == '*' || expression[i] == '/') {
-			operations[operations_iterator] = expression[i];
+		if (computable_expression[i] == '+' || computable_expression[i] == '-' || computable_expression[i] == '*' || computable_expression[i] == '/') {
+			operations[operations_iterator] = computable_expression[i];
 			operations_iterator++;
 		}
 
-		if (expression[i] == '(') {
+		if (computable_expression[i] == '(') {
 			operations[operations_iterator] = '(';
 			operations_iterator++;
-		} else if (expression[i] == ')') {
+		} else if (computable_expression[i] == ')') {
 			while (operations[operations_iterator - 1] != '(') {
 				switch (operations[operations_iterator - 1]) {
 				case '+':
