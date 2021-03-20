@@ -5,9 +5,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
 
 int is_simple_expression(char *, int, int, int);
-char *replace_identifiers(char *, char **, char **, int);
+char *replace_variables(char *, char **, char **, int);
+double calculate_expression(char *, int);
+int digits_count(int);
 
 int main() {
 	FILE *input, *output;
@@ -35,9 +38,10 @@ int main() {
 		printf("Can't open file output.txt");
 		return 1;
 	}
-
+	int exprlen = strlen(expression);
 	if (is_simple_expression(expression, 0, 0, 0) == 1) {
-		fprintf(output, "%s", replace_identifiers(expression, variables, values, lines_amount));
+		char* expr = replace_variables(expression, variables, values, lines_amount);
+		fprintf(output, "%lf", calculate_expression(expr, exprlen));
 	}
 	else {
 		fprintf(output, "INCORRECT");
@@ -189,7 +193,7 @@ int is_simple_expression(char *expression, int open_brackets_count, int close_br
 	return 0;
 }
 
-char *replace_identifiers(char *expression, char **variables, char **values, int lines_amount) {
+char *replace_variables(char *expression, char **variables, char **values, int lines_amount) {
 	for (int i = 0; i < lines_amount; i++) {
 		if (expression[0] != '(') {
 			break;
@@ -197,7 +201,7 @@ char *replace_identifiers(char *expression, char **variables, char **values, int
 
 		char *substr = strstr(expression, (char *)(variables));
 		
-		while (1) {
+		while (substr != NULL) {
 			substr = strstr(substr, (char *)(variables));
 			if (substr == NULL) {
 				break;
@@ -220,4 +224,66 @@ char *replace_identifiers(char *expression, char **variables, char **values, int
 		values++;
 	}
 	return expression;
+}
+
+double calculate_expression(char *expression, int exprlen) {
+	double values[MAX_EXPRESSION_LENGTH];
+	char operations[MAX_EXPRESSION_LENGTH];
+	int operations_iterator = 0;
+	int values_iterator = 0;
+	char *substr = operations;
+
+	for (int i = 0; i < exprlen; i++) {
+		if (isdigit(expression[i])) {	
+			int value = atoi(expression + i);
+			int len = digits_count(value);
+			values[values_iterator] = value;
+			values_iterator++;
+			i += len;
+		}
+		
+		if (expression[i] == '+' || expression[i] == '-' || expression[i] == '*' || expression[i] == '/') {
+			operations[operations_iterator] = expression[i];
+			operations_iterator++;
+		}
+
+		if (expression[i] == '(') {
+			operations[operations_iterator] = '(';
+			operations_iterator++;
+		} else if (expression[i] == ')') {
+			while (operations[operations_iterator - 1] != '(') {
+				switch (operations[operations_iterator - 1]) {
+				case '+':
+					values[values_iterator - 2] += values[values_iterator - 1];
+					values_iterator--;
+					break;
+				case '-':
+					values[values_iterator - 2] -= values[values_iterator - 1];
+					values_iterator--;
+					break;
+				case '*':
+					values[values_iterator - 2] *= values[values_iterator - 1];
+					values_iterator--;
+					break;
+				case '/':
+					values[operations_iterator - 2] /= values[operations_iterator - 1];
+					values_iterator--;
+					break;
+				}
+				operations_iterator--;
+			}
+			memcpy(substr + operations_iterator - 1, substr + operations_iterator, sizeof(operations));
+			operations_iterator--;
+		}
+	}
+	return values[0];
+}
+
+int digits_count(int number) {
+	int i = 0;
+	while (number > 0) {
+		number /= 10;
+		i++;
+	}
+	return i;
 }
