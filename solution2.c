@@ -41,15 +41,18 @@ int main() {
 	}
 
 	int expression_length = strlen(expression);
+
 	if (has_first_bracket(expression, expression_length) == "YES") {
 		if (is_simple_expression(expression, expression_length, 0, 0, 0) == 1) {
 			replace_variables(expression, variables, values, lines_amount);
+
 			int i = 0;
 			for (; i < expression_length; i++) {
 				if (isalpha(expression[i])) {
 					break;
 				}
 			}
+
 			if (i == expression_length) {
 				fprintf(output, "%lf\n", calculate_expression(expression));
 				fprintf(output, "%s", expression);
@@ -103,7 +106,6 @@ char *has_first_bracket(char *expression, int expression_length) {
 }
 
 int is_simple_expression(char *expression, int expression_length, int open_brackets_count, int close_brackets_count, int signs_count) {
-
 	for (int i = 0; i < expression_length; i++) {
 		if (expression[i] == '(') {	
 			open_brackets_count++;
@@ -133,23 +135,13 @@ int is_simple_expression(char *expression, int expression_length, int open_brack
 					return 1;
 				}
 		}
-			if (expression[i] == '+' ||
-				expression[i] == '-' ||
-				expression[i] == '*' ||
-				expression[i] == '/') {
-
-				signs_count++;
-				return is_simple_expression(expression + i + 1, expression_length - 1 - i, open_brackets_count, close_brackets_count, signs_count);
-			}
-			else {
-				return 0;
-			}
-	}
-	if (open_brackets_count == close_brackets_count && close_brackets_count == signs_count) {
-		return 1;
-	}
-	else {
-		return 0;
+		if (expression[i] == '+' || expression[i] == '-' || expression[i] == '*' || expression[i] == '/') {
+			signs_count++;
+			return is_simple_expression(expression + i + 1, expression_length - 1 - i, open_brackets_count, close_brackets_count, signs_count);
+		}
+		else {
+			return 0;
+		}
 	}
 }
 
@@ -160,6 +152,7 @@ char *replace_variables(char *expression, char **variables, char **values, int l
 		for (int j = 0; j < lines_amount; j++) {
 			char *substr = strstr(expression, (char *)(variables + j));
 			int variable_length = strlen((char *)(variables + j));
+
 			if (substr != NULL && expression_length == variable_length) {
 				memcpy(expression, (char *)(values + j), sizeof(expression));
 				return expression;
@@ -171,7 +164,6 @@ char *replace_variables(char *expression, char **variables, char **values, int l
 	}
 
 	for (int i = 0; i < lines_amount; i++) {
-
 		char *substr = strstr(expression, (char *)(variables));
 		
 		while (substr != NULL) {
@@ -211,6 +203,7 @@ double calculate_expression(char *computable_expression) {
 		if (isdigit(computable_expression[i])) {	
 			int value = atoi(computable_expression + i);
 			int len = digits_count(value);
+
 			values[values_iterator] = value;
 			values_iterator++;
 			i += len;
