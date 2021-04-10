@@ -6,7 +6,7 @@
 #include <string.h>
 #include <ctype.h>
 
-int is_computable(char *, int);
+int is_computable(char *);
 int is_single_id(char *);
 int is_single_number(char *);
 int is_sign(char *);
@@ -41,8 +41,6 @@ int main() {
 		return 1;
 	}
 
-	int expr_len = strlen(expr);
-	
 	if (is_single_number(expr)) {
 		fprintf(output, "%s", expr);
 	}
@@ -52,7 +50,7 @@ int main() {
 	else if (is_simple(expr, 0, 0, 0) == 1) {
 		replace_ids(expr, ids, values, ids_amount);
 
-		if(is_computable(expr, expr_len)){
+		if(is_computable(expr)){
 			fprintf(output, "%s = %.1lf", expr, calculate(expr));
 		}
 		else {
@@ -67,7 +65,9 @@ int main() {
 	return 0;
 }
 
-int is_computable(char *expr, int expr_len) {
+int is_computable(char *expr) {
+	int expr_len = strlen(expr);
+
 	for (int i = 0; i < expr_len; i++) {
 		if (isalpha(*(expr + i))) {
 			return 0;;
