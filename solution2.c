@@ -349,10 +349,7 @@ double calculate(char *computable_expr) {
 			i += len;
 		}
 
-		if (*(computable_expr + i) == '+' ||
-			*(computable_expr + i) == '-' ||
-			*(computable_expr + i) == '*' ||
-			*(computable_expr + i) == '/'   ) {
+		if (is_sign(computable_expr + i)) {
 
 			*(operations + op_iter) = *(computable_expr + i);
 			op_iter++;
