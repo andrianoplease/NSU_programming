@@ -6,6 +6,7 @@
 #include <string.h>
 #include <ctype.h>
 
+int is_computable(char *, int);
 int is_single_id(char *);
 int is_single_number(char *);
 int is_sign(char *);
@@ -40,7 +41,7 @@ int main() {
 		return 1;
 	}
 
-	int expr_length = strlen(expr);
+	int expr_len = strlen(expr);
 	
 	if (is_single_number(expr)) {
 		fprintf(output, "%s", expr);
@@ -51,14 +52,7 @@ int main() {
 	else if (is_simple(expr, 0, 0, 0) == 1) {
 		replace_ids(expr, ids, values, ids_amount);
 
-		int i = 0;
-		for (; i < expr_length; i++) {
-			if (isalpha(*(expr + i))) {
-				break;
-			}
-		}
-
-		if (i == expr_length) {
+		if(is_computable(expr, expr_len)){
 			fprintf(output, "%s = %.1lf", expr, calculate(expr));
 		}
 		else {
@@ -73,14 +67,24 @@ int main() {
 	return 0;
 }
 
+int is_computable(char *expr, int expr_len) {
+	for (int i = 0; i < expr_len; i++) {
+		if (isalpha(*(expr + i))) {
+			return 0;;
+		}
+	}
+	return 1;
+}
 
 int is_sign(char *expr) {
-	if (*expr == '+' || *expr == '-' || *expr == '*' || *expr == '/') {
+	if (*expr == '+' ||
+		*expr == '-' ||
+		*expr == '*' ||
+		*expr == '/'  ) {
 		return 1;
 	}
 	return 0;
 }
-
 
 int is_single_id(char *expr) {
 	if (isalpha(*expr)) {
@@ -100,7 +104,6 @@ int is_single_id(char *expr) {
 	}
 }
 
-
 int is_single_number(char *expr) {
 	while (*expr) {
 		if (isdigit(*expr)) {
@@ -114,22 +117,21 @@ int is_single_number(char *expr) {
 	return 1;
 }
 
-
 int is_simple(char *expr, int opens, int closes, int signs) {
-	int current_length = strlen(expr);
+	int curr_len = strlen(expr);
 
 	if (*expr == '(') {
 		opens++;
 
-		if (current_length == 1) {
+		if (curr_len == 1) {
 			return 0;
 		}
 		else {
-			for (int i = 1; i < current_length; i++) {
+			for (int i = 1; i < curr_len; i++) {
 				if (*(expr + i) == '(') {
 					opens++;
 
-					if (i == current_length - 1) {
+					if (i == curr_len - 1) {
 						return 0;
 					}
 
@@ -144,7 +146,7 @@ int is_simple(char *expr, int opens, int closes, int signs) {
 	else if (*expr == ')') {
 		closes++;
 
-		if (current_length == 1) {
+		if (curr_len == 1) {
 			if (opens == closes && opens == signs) {
 				return 1;
 			}
@@ -153,11 +155,11 @@ int is_simple(char *expr, int opens, int closes, int signs) {
 			}
 		}
 		else {
-			for (int i = 1; i < current_length; i++) {
+			for (int i = 1; i < curr_len; i++) {
 				if (*(expr + i) == ')') {
 					closes++;
 
-					if (i == current_length - 1) {
+					if (i == curr_len - 1) {
 						if (opens == closes && opens == signs) {
 							return 1;
 						}
@@ -171,7 +173,7 @@ int is_simple(char *expr, int opens, int closes, int signs) {
 				else if (is_sign((expr + i))) {
 					signs++;
 
-					if (current_length - i == 1) {
+					if (curr_len - i == 1) {
 						return 0;
 					}
 					else {
@@ -185,13 +187,13 @@ int is_simple(char *expr, int opens, int closes, int signs) {
 		}
 	}
 	else if (isdigit(*expr)) {
-		if (current_length == 1) {
+		if (curr_len == 1) {
 			return 0;
 		}
 		else {
-			for (int i = 1; i < current_length; i++) {
+			for (int i = 1; i < curr_len; i++) {
 				if (isdigit(*(expr + i))) {
-					if (i == current_length - 1) {
+					if (i == curr_len - 1) {
 						if (opens == 0 && closes == 0 && signs == 0) {
 							return 1;
 						}
@@ -205,7 +207,7 @@ int is_simple(char *expr, int opens, int closes, int signs) {
 				else if (is_sign((expr + i))) {
 					signs++;
 
-					if (current_length - i == 1 || expr[i + 1] == ')') {
+					if (curr_len - i == 1 || expr[i + 1] == ')') {
 						return 0;
 					}
 					else {
@@ -222,13 +224,13 @@ int is_simple(char *expr, int opens, int closes, int signs) {
 		}
 	}
 	else if (isalpha(*expr)) {
-		if (current_length == 1) {
+		if (curr_len == 1) {
 			return 0;
 		}
 		else {
-			for (int i = 1; i < current_length; i++) {
+			for (int i = 1; i < curr_len; i++) {
 				if (isalpha(*(expr + i)) || isdigit(*(expr + i)) || *(expr + i) == '_') {
-					if (i == current_length - 1) {
+					if (i == curr_len - 1) {
 						if (opens == 0 && closes == 0 && signs == 0) {
 							return 1;
 						}
@@ -242,7 +244,7 @@ int is_simple(char *expr, int opens, int closes, int signs) {
 				else if (is_sign((expr + i))) {
 					signs++;
 
-					if (current_length - i == 1) {
+					if (curr_len - i == 1) {
 						return 0;
 					}
 					else {
@@ -259,7 +261,6 @@ int is_simple(char *expr, int opens, int closes, int signs) {
 	return 0;
 }
 
-
 char *replace_ids(char *expr, char **ids, char **values, int ids_amount) {
 	int expr_length = strlen(expr);
 
@@ -273,19 +274,17 @@ char *replace_ids(char *expr, char **ids, char **values, int ids_amount) {
 		
 			substr = strstr(substr, ids);
 
-			int id_length = strlen(ids);
-			int value_length = strlen(values);
+			int id_len = strlen(ids);
+			int value_len = strlen(values);
 
-			if (id_length == expr_length) {
-
-				if (id_length != value_length) {
-					memcpy(substr + value_length, substr + id_length, strlen(substr));
+			if (id_len == expr_length) {
+				if (id_len != value_len) {
+					memcpy(substr + value_len, substr + id_len, strlen(substr));
 				}
 
-				memcpy(substr, values, value_length);
+				memcpy(substr, values, value_len);
 			}
 			
-
 			ids++;
 			values++;;
 		}
@@ -306,19 +305,19 @@ char *replace_ids(char *expr, char **ids, char **values, int ids_amount) {
 					break;
 				}
 
-				int id_length = strlen(ids);
-				int value_length = strlen(values);
+				int id_len = strlen(ids);
+				int value_len = strlen(values);
 
 				if (isdigit(*(substr - 1)) == 0 &&
 					isalpha(*(substr - 1)) == 0 &&
-					isalpha(*(substr + id_length)) == 0 &&
-					isdigit(*(substr + id_length)) == 0) {
+					isalpha(*(substr + id_len)) == 0 &&
+					isdigit(*(substr + id_len)) == 0) {
 
-					if (id_length != value_length) {
-						memcpy(substr + value_length, substr + id_length, strlen(substr));
+					if (id_len != value_len) {
+						memcpy(substr + value_len, substr + id_len, strlen(substr));
 					}
 
-					memcpy(substr, values, value_length);
+					memcpy(substr, values, value_len);
 				}
 				else {
 					substr++;
@@ -338,9 +337,9 @@ double calculate(char *computable_expr) {
 	int op_iter = 0;
 	int val_iter = 0;
 	char *substr = operations;
-	int computable_expr_length = strlen(computable_expr);
+	int computable_expr_len = strlen(computable_expr);
 
-	for (int i = 0; i < computable_expr_length; i++) {
+	for (int i = 0; i < computable_expr_len; i++) {
 		if (isdigit(*(computable_expr + i))) {
 			int value = atoi(computable_expr + i);
 			int len = digits_count(value);
