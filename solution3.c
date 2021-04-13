@@ -219,6 +219,11 @@ void test(FILE *input, FILE *output, FILE *initial, FILE *sorted) {
         indexes[i] = i;
     }
 
+    int *indexes_copy = (int *)malloc(matrices_amount * sizeof(int));
+    for (int i = 0; i < matrices_amount; i++) {
+        indexes_copy[i] = indexes[i];
+    }
+
     for (int i = 0; i < matrices_amount; i++) {
         for (int j = 0; j < sizes[i]; j++) {
             for (int k = 0; k < sizes[i]; k++) {
@@ -263,6 +268,10 @@ void test(FILE *input, FILE *output, FILE *initial, FILE *sorted) {
 
         for (int j = 0; j < matrices_amount; j++) {
             determinants[j] = determinants_copy[j];
+        }
+
+        for (int k = 0; k < matrices_amount; k++) {
+            indexes[k] = indexes_copy[k];
         }
     }
     fprintf(output, "\n");
@@ -330,4 +339,5 @@ void test(FILE *input, FILE *output, FILE *initial, FILE *sorted) {
     free(tics);
     free(sizes);
     free(indexes);
+    free(indexes_copy);
 }
