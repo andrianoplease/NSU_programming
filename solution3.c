@@ -5,7 +5,7 @@
 
 void swap(int *, int *);
 void delete_row_and_col(int **, int, int, int, int **);
-int matrix_determinant(int **, int);
+int matrix_determinant(int **, int, int **);
 void sifting(int *, int, int, int *);
 void heap_sort(int *, int, int *);
 
@@ -44,9 +44,14 @@ int main() {
 
     fclose(input);
 
+    int **result_matrix = (int **)malloc(64 * sizeof(int *));
+    for (int i = 0; i < 64; i++) {
+        result_matrix[i] = (int *)malloc(64 * sizeof(int));
+    }
+
     int *determinants = (int *)malloc(matrix_count * sizeof(int));
     for (int i = 0; i < matrix_count; i++) {
-        determinants[i] = matrix_determinant(matrices[i], sizes[i]);
+        determinants[i] = matrix_determinant(matrices[i], sizes[i], result_matrix);
     }
 
     int *indexes = (int *)malloc(matrix_count * sizeof(int));
@@ -57,6 +62,11 @@ int main() {
     heap_sort(determinants, matrix_count, indexes);
 
     free(determinants);
+
+    for (int i = 0; i < 64; i++) {
+        free(result_matrix[i]);
+    }
+    free(result_matrix);
 
     output = fopen("output.txt", "w");
     if (output == NULL) {
@@ -74,8 +84,6 @@ int main() {
         }
     }
 
-    fclose(output);
-
     for (int i = 0; i < matrix_count; i++) {
         for (int j = 0; j < 64; j++) {
             free(matrices[i][j]);
@@ -83,6 +91,8 @@ int main() {
         free(matrices[i]);
     }
     free(matrices);
+
+    fclose(output);
 
     free(sizes);
     free(indexes);
@@ -116,7 +126,7 @@ void delete_row_and_col(int **matrix, int size, int row, int col, int **result_m
     }
 }
 
-int matrix_determinant(int **matrix, int size) {
+int matrix_determinant(int **matrix, int size, int **result_matrix) {
     int determinant = 0;
     int sign = 1;
 
@@ -128,21 +138,11 @@ int matrix_determinant(int **matrix, int size) {
         return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
     }
 
-    int **result_matrix = (int **)malloc(64 * sizeof(int *));
-    for (int i = 0; i < 64; i++) {
-        result_matrix[i] = (int *)malloc(64 * sizeof(int));
-    }
-
     for (int i = 0; i < size; i++) {
         delete_row_and_col(matrix, size, 0, i, result_matrix);
-        determinant = determinant + (matrix[0][i] * sign * matrix_determinant(result_matrix, size - 1));
+        determinant = determinant + (matrix[0][i] * sign * matrix_determinant(result_matrix, size - 1, result_matrix));
         sign *= -1;
     }
-
-    for (int i = 0; i < 64; i++) {
-        free(result_matrix[i]);
-    }
-    free(result_matrix);
 
     return determinant;
 }
@@ -176,6 +176,7 @@ void sifting(int *determinants, int root, int end, int *indexes) {
 }
 
 void heap_sort(int *determinants, int size, int *indexes) {
+
     for (int i = (size / 2) - 1; i >= 0; i--) {
         sifting(determinants, i, size - 1, indexes);
     }
