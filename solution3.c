@@ -9,7 +9,7 @@
 
 void swap(int *, int *);
 void delete_row_and_col(int **, int, int, int, int **);
-int matrix_determinant(int **, int, int **);
+long int matrix_determinant(int **, int, int **);
 void sifting(int *, int, int, int *);
 void heap_sort(int *, int, int *);
 long int sum(int *, int);
@@ -81,8 +81,8 @@ void delete_row_and_col(int **matrix, int size, int row, int col, int **result_m
     }
 }
 
-int matrix_determinant(int **matrix, int size, int **result_matrix) {
-    int determinant = 0;
+long int matrix_determinant(int **matrix, int size, int **result_matrix) {
+    long int determinant = 0;
     int sign = 1;
 
     if (size == 1) {
@@ -171,8 +171,8 @@ void selection_sort(int *array, int size, int *indexes) {
                 min_index = j;
             }
         }
-        swap(array, array + min_index);
-        swap(indexes, indexes + min_index);
+        swap(array + i, array + min_index);
+        swap(indexes + i, indexes + min_index);
     }
 }
 
@@ -204,7 +204,7 @@ void test(FILE *input, FILE *output, FILE *initial, FILE *sorted) {
         result_matrix[i] = (int *)malloc(64 * sizeof(int));
     }
 
-    int *determinants = (int *)malloc(matrices_amount * sizeof(int));
+    long int *determinants = (long int *)malloc(matrices_amount * sizeof(long int));
     for (int i = 0; i < matrices_amount; i++) {
         determinants[i] = matrix_determinant(matrices[i], sizes[i], result_matrix);
     }
@@ -219,11 +219,6 @@ void test(FILE *input, FILE *output, FILE *initial, FILE *sorted) {
         indexes[i] = i;
     }
 
-    int *indexes_copy = (int *)malloc(matrices_amount * sizeof(int));
-    for (int i = 0; i < matrices_amount; i++) {
-        indexes_copy[i] = indexes[i];
-    }
-
     for (int i = 0; i < matrices_amount; i++) {
         for (int j = 0; j < sizes[i]; j++) {
             for (int k = 0; k < sizes[i]; k++) {
@@ -231,6 +226,7 @@ void test(FILE *input, FILE *output, FILE *initial, FILE *sorted) {
             }
             fprintf(initial, "\n");
         }
+        fprintf(initial, "Determinant: %ld\n", determinants[i]);
         fprintf(initial, "\n");
     }
 
@@ -271,7 +267,7 @@ void test(FILE *input, FILE *output, FILE *initial, FILE *sorted) {
         }
 
         for (int k = 0; k < matrices_amount; k++) {
-            indexes[k] = indexes_copy[k];
+            indexes[k] = k;
         }
     }
     fprintf(output, "\n");
@@ -318,6 +314,7 @@ void test(FILE *input, FILE *output, FILE *initial, FILE *sorted) {
             }
             fprintf(sorted, "\n");
         }
+        fprintf(sorted, "Determinant: %ld\n", determinants[i]);
         fprintf(sorted, "\n");
     }
 
@@ -339,5 +336,4 @@ void test(FILE *input, FILE *output, FILE *initial, FILE *sorted) {
     free(tics);
     free(sizes);
     free(indexes);
-    free(indexes_copy);
 }
