@@ -15,7 +15,7 @@ void heap_sort(int *, int, int *);
 long int sum(int *, int);
 double sample_mean(int *, int);
 double sample_variance(int *, int);
-void selection_sort(int *, int);
+void selection_sort(int *, int, int *);
 void test(FILE *, FILE *, FILE *, FILE *);
 
 int main() {
@@ -163,7 +163,7 @@ double sample_variance(int *selection, int size) {
     return sqrt(sum_squares / size, 2);
 }
 
-void selection_sort(int *array, int size) {
+void selection_sort(int *array, int size, int *indexes) {
     for (int i = 0; i < size; i++) {
         int min_index = i;
         for (int j = i + 1; j < size; j++) {
@@ -172,6 +172,7 @@ void selection_sort(int *array, int size) {
             }
         }
         swap(array, array + min_index);
+        swap(indexes, indexes + min_index);
     }
 }
 
@@ -248,7 +249,7 @@ void test(FILE *input, FILE *output, FILE *initial, FILE *sorted) {
             heap_sort(determinants, matrices_amount, indexes);
             break;
         case 2:
-            selection_sort(determinants, matrices_amount);
+            selection_sort(determinants, matrices_amount, indexes);
             break;
         default:
             printf("Missing sort");
@@ -297,7 +298,7 @@ void test(FILE *input, FILE *output, FILE *initial, FILE *sorted) {
         heap_sort(determinants, matrices_amount, indexes);
         break;
     case 2:
-        selection_sort(determinants, matrices_amount);
+        selection_sort(determinants, matrices_amount, indexes);
         break;
     }
 
