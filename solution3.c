@@ -2,7 +2,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <malloc.h>
 #include <time.h>
 #include <intrin.h>
 #include <math.h>
@@ -16,36 +15,10 @@ long int sum(int *, int);
 double sample_mean(int *, int);
 double sample_variance(int *, int);
 void selection_sort(int *, int);
-void compare_launches(FILE *, FILE *, FILE *, void (*sort) (int, int, int));
-void sort_random_data(FILE *, FILE *, FILE *, void (*sort) (int, int, int));
+void compare_launches(void (*sort) (int, int, int));
+void sort_random_data(void (*sort) (int, int, int));
 
 int main() {
-    FILE *input, *output, *initial, *sorted;
-
-    input = fopen("input.txt", "r");
-    if (input == NULL) {
-        printf("Can't open file input.txt");
-        return 1;
-    }
-
-    output = fopen("output.txt", "w");
-    if (output == NULL) {
-        printf("Can't open file output.txt");
-        return 1;
-    }
-
-    initial = fopen("initial.txt", "w");
-    if (input == NULL) {
-        printf("Can't open file initial.txt");
-        return 1;
-    }
-
-    sorted = fopen("sorted.txt", "w");
-    if (input == NULL) {
-        printf("Can't open file sorted.txt");
-        return 1;
-    }
-
     printf("Choose what you want to do:\n");
     printf("1. Compare launches on the original dataset\n");
     printf("2. Sort random data\n");
@@ -55,16 +28,12 @@ int main() {
 
     switch (choice) {
     case 1:
-        compare_launches(input, output, sorted, heap_sort);
+        compare_launches(heap_sort);
         break;
     case 2:
-        sort_random_data(output, initial, sorted, heap_sort);
+        sort_random_data(heap_sort);
     }
 
-    fclose(input);
-    fclose(output);
-    fclose(initial);
-    fclose(sorted);
     return 0;
 }
 
@@ -185,7 +154,26 @@ void selection_sort(int *array, int size) {
     }
 }
 
-void compare_launches(FILE *input, FILE *output, FILE *sorted, void (*sort) (int, int, int)) {
+void compare_launches(void (*sort) (int, int, int)) {
+    FILE *input, *output, *sorted;
+
+    input = fopen("input.txt", "r");
+    if (input == NULL) {
+        printf("Can't open file input.txt");
+        return 1;
+    }
+
+    output = fopen("output.txt", "w");
+    if (output == NULL) {
+        printf("Can't open file output.txt");
+        return 1;
+    }
+
+    sorted = fopen("sorted.txt", "w");
+    if (input == NULL) {
+        printf("Can't open file sorted.txt");
+        return 1;
+    }
     int matrices_amount = 0;
     fscanf(input, "%d", &matrices_amount);
 
@@ -310,9 +298,33 @@ void compare_launches(FILE *input, FILE *output, FILE *sorted, void (*sort) (int
     free(tics);
     free(sizes);
     free(indexes);
+
+    fclose(input);
+    fclose(output);
+    fclose(sorted);
 }
 
-void sort_random_data(FILE *output, FILE *initial, FILE *sorted, void (*sort) (int, int, int)) {
+void sort_random_data(void (*sort) (int, int, int)) {
+    FILE *output, *initial, *sorted;
+
+    output = fopen("output.txt", "w");
+    if (output == NULL) {
+        printf("Can't open file output.txt");
+        return 1;
+    }
+
+    initial = fopen("initial.txt", "w");
+    if (initial == NULL) {
+        printf("Can't open file initial.txt");
+        return 1;
+    }
+
+    sorted = fopen("sorted.txt", "w");
+    if (sorted == NULL) {
+        printf("Can't open file sorted.txt");
+        return 1;
+    }
+
     srand(time(NULL));
 
     int matrices_amount = 1 + rand() % 100;
@@ -386,7 +398,12 @@ void sort_random_data(FILE *output, FILE *initial, FILE *sorted, void (*sort) (i
         free(matrices[i]);
     }
     free(matrices);
+
     free(determinants);
     free(sizes);
     free(indexes);
+
+    fclose(output);
+    fclose(initial);
+    fclose(sorted);
 }
