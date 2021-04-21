@@ -9,7 +9,7 @@
 
 void swap(int *, int *);
 void delete_row_and_col(int **, int, int, int, int **);
-int matrix_determinant(int **, int, int **);
+long int matrix_determinant(int **, int, int **);
 void sifting(int *, int, int, int *);
 void heap_sort(int *, int, int *);
 long int sum(int *, int);
@@ -65,7 +65,6 @@ int main() {
     fclose(output);
     fclose(initial);
     fclose(sorted);
-
     return 0;
 }
 
@@ -95,8 +94,8 @@ void delete_row_and_col(int **matrix, int size, int row, int col, int **result_m
     }
 }
 
-int matrix_determinant(int **matrix, int size, int **result_matrix) {
-    int determinant = 0;
+long int matrix_determinant(int **matrix, int size, int **result_matrix) {
+    long int determinant = 0;
     int sign = 1;
 
     if (size == 1) {
@@ -190,19 +189,18 @@ void compare_launches(FILE *input, FILE *output, FILE *sorted, void (*sort) (int
     int matrices_amount = 0;
     fscanf(input, "%d", &matrices_amount);
 
-    int ***matrices = (int ***)malloc(matrices_amount * sizeof(int **));
+    int ***matrices = malloc(matrices_amount * sizeof(int **));
     for (int i = 0; i < matrices_amount; i++) {
-        matrices[i] = (int **)malloc(64 * sizeof(int *));
+        matrices[i] = malloc(64 * sizeof(int *));
         for (int j = 0; j < 64; j++) {
-            matrices[i][j] = (int *)malloc(64 * sizeof(int));
+            matrices[i][j] = malloc(64 * sizeof(int));
         }
     }
 
-    int *sizes = (int *)malloc(matrices_amount * sizeof(int));
+    int *sizes = malloc(matrices_amount * sizeof(int));
     int element = 0;
     for (int i = 0; i < matrices_amount; i++) {
         fscanf(input, "%d", &sizes[i]);
-
         for (int j = 0; j < sizes[i]; j++) {
             for (int k = 0; k < sizes[i]; k++) {
                 fscanf(input, "%d", &element);
@@ -211,22 +209,22 @@ void compare_launches(FILE *input, FILE *output, FILE *sorted, void (*sort) (int
         }
     }
 
-    int **result_matrix = (int **)malloc(64 * sizeof(int *));
+    int **result_matrix = malloc(64 * sizeof(int *));
     for (int i = 0; i < 64; i++) {
-        result_matrix[i] = (int *)malloc(64 * sizeof(int));
+        result_matrix[i] = malloc(64 * sizeof(int));
     }
 
-    int *determinants = (int *)malloc(matrices_amount * sizeof(int));
+    long int *determinants = malloc(matrices_amount * sizeof(long int));
     for (int i = 0; i < matrices_amount; i++) {
         determinants[i] = matrix_determinant(matrices[i], sizes[i], result_matrix);
     }
 
-    int *determinants_copy = (int *)malloc(matrices_amount * sizeof(int));
+    long int *determinants_copy = malloc(matrices_amount * sizeof(long int));
     for (int i = 0; i < matrices_amount; i++) {
         determinants_copy[i] = determinants[i];
     }
 
-    int *indexes = (int *)malloc(matrices_amount * sizeof(int));
+    int *indexes = malloc(matrices_amount * sizeof(int));
     for (int i = 0; i < matrices_amount; i++) {
         indexes[i] = i;
     }
@@ -237,7 +235,7 @@ void compare_launches(FILE *input, FILE *output, FILE *sorted, void (*sort) (int
     printf("\n");
 
     long long int start, end;
-    int *tics = (long long int *)malloc(launches_amount * sizeof(long long int));
+    int *tics = malloc(launches_amount * sizeof(long long int));
 
     for (int i = 0; i < launches_amount; i++) {
         start = __rdtsc();
