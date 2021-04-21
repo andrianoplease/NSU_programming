@@ -2,23 +2,31 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <malloc.h>
 #include <time.h>
 #include <intrin.h>
 #include <math.h>
 
 void swap(int *, int *);
 void delete_row_and_col(int **, int, int, int, int **);
-long int matrix_determinant(int **, int, int **);
+int matrix_determinant(int **, int, int **);
 void sifting(int *, int, int, int *);
 void heap_sort(int *, int, int *);
 long int sum(int *, int);
 double sample_mean(int *, int);
 double sample_variance(int *, int);
-void selection_sort(int *, int, int *);
-void test(FILE *, FILE *, FILE *);
+void selection_sort(int *, int);
+void compare_launches(FILE *, FILE *, FILE *, void (*sort) (int, int, int));
+void sort_random_data(FILE *, FILE *, FILE *, void (*sort) (int, int, int));
 
 int main() {
-    FILE *output, *initial, *sorted;
+    FILE *input, *output, *initial, *sorted;
+
+    input = fopen("input.txt", "r");
+    if (input == NULL) {
+        printf("Can't open file input.txt");
+        return 1;
+    }
 
     output = fopen("output.txt", "w");
     if (output == NULL) {
@@ -27,19 +35,33 @@ int main() {
     }
 
     initial = fopen("initial.txt", "w");
-    if (initial == NULL) {
+    if (input == NULL) {
         printf("Can't open file initial.txt");
         return 1;
     }
 
     sorted = fopen("sorted.txt", "w");
-    if (sorted == NULL) {
+    if (input == NULL) {
         printf("Can't open file sorted.txt");
         return 1;
     }
 
-    test(output, initial, sorted);
+    printf("Choose what you want to do:\n");
+    printf("1. Compare launches on the original dataset\n");
+    printf("2. Sort random data\n");
 
+    int choice = 0;
+    scanf("%d", &choice);
+
+    switch (choice) {
+    case 1:
+        compare_launches(input, output, sorted, heap_sort);
+        break;
+    case 2:
+        sort_random_data(output, initial, sorted, heap_sort);
+    }
+
+    fclose(input);
     fclose(output);
     fclose(initial);
     fclose(sorted);
@@ -73,8 +95,8 @@ void delete_row_and_col(int **matrix, int size, int row, int col, int **result_m
     }
 }
 
-long int matrix_determinant(int **matrix, int size, int **result_matrix) {
-    long int determinant = 0;
+int matrix_determinant(int **matrix, int size, int **result_matrix) {
+    int determinant = 0;
     int sign = 1;
 
     if (size == 1) {
@@ -94,23 +116,20 @@ long int matrix_determinant(int **matrix, int size, int **result_matrix) {
     return determinant;
 }
 
-void sifting(int *array, int root, int end, int *indexes) {
+void sifting(int *determinants, int root, int end, int *indexes) {
     int max_child;
     int indexes_root = root;
 
     while (root * 2 + 1 <= end) {
-        if (root * 2 + 1 == end) {
-            max_child = root * 2 + 1;
-        }
-        else if (array[root * 2 + 1] > array[root * 2 + 2]) {
+        if (root * 2 + 1 == end || determinants[root * 2 + 1] > determinants[root * 2 + 2]) {
             max_child = root * 2 + 1;
         }
         else {
             max_child = root * 2 + 2;
         }
 
-        if (array[root] < array[max_child]) {
-            swap(array + root, array + max_child);
+        if (determinants[root] < determinants[max_child]) {
+            swap(determinants + root, determinants + max_child);
             root = max_child;
 
             swap(indexes + indexes_root, indexes + max_child);
@@ -134,28 +153,28 @@ void heap_sort(int *array, int size, int *indexes) {
     }
 }
 
-long int sum(int *array, int size) {
-    int sum = 0;
+long int sum(int *selection, int size) {
+    long int sum = 0;
     for (int i = 0; i < size; i++) {
-        sum += array[i];
+        sum += selection[i];
     }
     return sum;
 }
 
-double sample_mean(int *array, int size) {
-    return (double)sum(array, size) / (double)size;
+double sample_mean(int *selection, int size) {
+    return (double) sum(selection, size) / (double) size;
 }
 
-double sample_variance(int *array, int size) {
-    int sum_squares = 0;
-    int mean = sample_mean(array, size);
+double sample_variance(int *selection, int size) {
+    double sum_squares = 0;
+    double mean = sample_mean(selection, size);
     for (int i = 0; i < size; i++) {
-        sum_squares += pow(array[i] - mean, 2);
+        sum_squares += pow(selection[i] - mean, 2);
     }
     return sqrt(sum_squares / size, 2);
 }
 
-void selection_sort(int *array, int size, int *indexes) {
+void selection_sort(int *array, int size) {
     for (int i = 0; i < size; i++) {
         int min_index = i;
         for (int j = i + 1; j < size; j++) {
@@ -163,12 +182,139 @@ void selection_sort(int *array, int size, int *indexes) {
                 min_index = j;
             }
         }
-        swap(array + i, array + min_index);
-        swap(indexes + i, indexes + min_index);
+        swap(array, array + min_index);
     }
 }
 
-void test(FILE *output, FILE *initial, FILE *sorted) {
+void compare_launches(FILE *input, FILE *output, FILE *sorted, void (*sort) (int, int, int)) {
+    int matrices_amount = 0;
+    fscanf(input, "%d", &matrices_amount);
+
+    int ***matrices = (int ***)malloc(matrices_amount * sizeof(int **));
+    for (int i = 0; i < matrices_amount; i++) {
+        matrices[i] = (int **)malloc(64 * sizeof(int *));
+        for (int j = 0; j < 64; j++) {
+            matrices[i][j] = (int *)malloc(64 * sizeof(int));
+        }
+    }
+
+    int *sizes = (int *)malloc(matrices_amount * sizeof(int));
+    int element = 0;
+    for (int i = 0; i < matrices_amount; i++) {
+        fscanf(input, "%d", &sizes[i]);
+
+        for (int j = 0; j < sizes[i]; j++) {
+            for (int k = 0; k < sizes[i]; k++) {
+                fscanf(input, "%d", &element);
+                matrices[i][j][k] = element;
+            }
+        }
+    }
+
+    int **result_matrix = (int **)malloc(64 * sizeof(int *));
+    for (int i = 0; i < 64; i++) {
+        result_matrix[i] = (int *)malloc(64 * sizeof(int));
+    }
+
+    int *determinants = (int *)malloc(matrices_amount * sizeof(int));
+    for (int i = 0; i < matrices_amount; i++) {
+        determinants[i] = matrix_determinant(matrices[i], sizes[i], result_matrix);
+    }
+
+    int *determinants_copy = (int *)malloc(matrices_amount * sizeof(int));
+    for (int i = 0; i < matrices_amount; i++) {
+        determinants_copy[i] = determinants[i];
+    }
+
+    int *indexes = (int *)malloc(matrices_amount * sizeof(int));
+    for (int i = 0; i < matrices_amount; i++) {
+        indexes[i] = i;
+    }
+
+    int launches_amount = 0;
+    printf("Enter the number of launches: ");
+    scanf("%d", &launches_amount);
+    printf("\n");
+
+    long long int start, end;
+    int *tics = (long long int *)malloc(launches_amount * sizeof(long long int));
+
+    for (int i = 0; i < launches_amount; i++) {
+        start = __rdtsc();
+ 
+        sort(determinants, matrices_amount, indexes);
+
+        end = __rdtsc();
+
+        tics[i] = end - start;
+        fprintf(output, "%d. %d\n", i + 1, tics[i]);
+
+        for (int j = 0; j < matrices_amount; j++) {
+            determinants[j] = determinants_copy[j];
+        }
+    }
+    fprintf(output, "\n");
+
+    int mean = sample_mean(tics, launches_amount);
+    int best_deviation = abs(mean - tics[0]);
+    int worst_deviation = abs(mean - tics[0]);
+    int best_index = 0;
+    int worst_index = 0;
+
+    for (int i = 0; i < launches_amount; i++) {
+        int deviation = abs(mean - tics[i]);
+
+        if (deviation <= best_deviation) {
+            best_deviation = deviation;
+            best_index = i;
+        }
+
+        if (deviation > worst_deviation) {
+            worst_deviation = deviation;
+            worst_index = i;
+        }
+    }
+
+    fprintf(output, "Sample mean: %lf\n", sample_mean(tics, launches_amount));
+    fprintf(output, "Sample variance: %lf\n", sample_variance(tics, launches_amount));
+    fprintf(output, "\n");
+    fprintf(output, "Best run: %d. %d\n", best_index + 1, tics[best_index]);
+    fprintf(output, "Worst run: %d. %d", worst_index + 1, tics[worst_index]);
+
+    sort(determinants, matrices_amount, indexes);
+
+    for (int i = 0; i < matrices_amount; i++) {
+        for (int j = 0; j < sizes[indexes[i]]; j++) {
+            for (int k = 0; k < sizes[indexes[i]]; k++) {
+                fprintf(sorted, "%d ", matrices[indexes[i]][j][k]);
+            }
+            fprintf(sorted, "\n");
+        }
+        fprintf(sorted, "Determinant: %ld\n", determinants[i]);
+        fprintf(sorted, "\n");
+    }
+
+    for (int i = 0; i < 64; i++) {
+        free(result_matrix[i]);
+    }
+    free(result_matrix);
+
+    for (int i = 0; i < matrices_amount; i++) {
+        for (int j = 0; j < 64; j++) {
+            free(matrices[i][j]);
+        }
+        free(matrices[i]);
+    }
+    free(matrices);
+
+    free(determinants);
+    free(determinants_copy);
+    free(tics);
+    free(sizes);
+    free(indexes);
+}
+
+void sort_random_data(FILE *output, FILE *initial, FILE *sorted, void (*sort) (int, int, int)) {
     srand(time(NULL));
 
     int matrices_amount = 1 + rand() % 100;
@@ -201,11 +347,6 @@ void test(FILE *output, FILE *initial, FILE *sorted) {
         determinants[i] = matrix_determinant(matrices[i], sizes[i], result_matrix);
     }
 
-    long int *determinants_copy = malloc(matrices_amount * sizeof(long int));
-    for (int i = 0; i < matrices_amount; i++) {
-        determinants_copy[i] = determinants[i];
-    }
-
     int *indexes = malloc(matrices_amount * sizeof(int));
     for (int i = 0; i < matrices_amount; i++) {
         indexes[i] = i;
@@ -218,85 +359,11 @@ void test(FILE *output, FILE *initial, FILE *sorted) {
             }
             fprintf(initial, "\n");
         }
-        fprintf(initial, "Determinant = %ld\n", determinants[i]);
+        fprintf(initial, "Determinant: %ld\n", determinants[i]);
         fprintf(initial, "\n");
     }
 
-    int choice = 0;
-    printf("1. Heap sort\n2. Selection sort\nChoose sort: ");
-    scanf("%d", &choice);
-
-    int runs_amount = 0;
-    printf("Enter the number of runs: ");
-    scanf("%d", &runs_amount);
-
-    __int64 start, end;
-    int *tics = malloc(runs_amount * sizeof(int));
-
-    for (int i = 0; i < runs_amount; i++) {
-        start = __rdtsc();
-
-        switch (choice) {
-        case 1: 
-            heap_sort(determinants, matrices_amount, indexes);
-            break;
-        case 2:
-            selection_sort(determinants, matrices_amount, indexes);
-            break;
-        default:
-            printf("Missing sort");
-            return 0;
-        }
-  
-        end = __rdtsc();
-
-        tics[i] = end - start;
-        fprintf(output, "%d. %d\n", i + 1, tics[i]);
-
-        for (int i = 0; i < matrices_amount; i++) {
-            determinants[i] = determinants_copy[i];
-        }
-
-        for (int i = 0; i < matrices_amount; i++) {
-            indexes[i] = i;
-        }
-    }
-    fprintf(output, "\n");
-
-    int mean = sample_mean(tics, runs_amount);
-    int best_deviation = abs(mean - tics[0]);
-    int worst_deviation = abs(mean - tics[0]);
-    int best_index = 0;
-    int worst_index = 0;
-
-    for (int i = 0; i < runs_amount; i++) {
-        int deviation = abs(mean - tics[i]);
-
-        if (deviation < best_deviation) {
-            best_deviation = deviation;
-            best_index = i;
-        }
-
-        if (deviation > worst_deviation) {
-            worst_deviation = deviation;
-            worst_index = i;
-        }
-    }
-
-    fprintf(output, "Sample mean: %lf\n", sample_mean(tics, runs_amount));
-    fprintf(output, "Sample variance: %lf\n", sample_variance(tics, runs_amount));
-    fprintf(output, "\n");
-    fprintf(output, "Best run: %d. %d\n", best_index + 1, tics[best_index]);
-    fprintf(output, "Worst run: %d. %d", worst_index + 1, tics[worst_index]);
-
-    switch (choice) {
-    case 1:
-        heap_sort(determinants, matrices_amount, indexes);
-        break;
-    case 2:
-        selection_sort(determinants, matrices_amount, indexes);
-        break;
-    }
+    sort(determinants, matrices_amount, indexes);
 
     for (int i = 0; i < matrices_amount; i++) {
         for (int j = 0; j < sizes[indexes[i]]; j++) {
@@ -305,7 +372,7 @@ void test(FILE *output, FILE *initial, FILE *sorted) {
             }
             fprintf(sorted, "\n");
         }
-        fprintf(sorted, "Determinant = %ld\n", determinants[i]);
+        fprintf(sorted, "Determinant: %ld\n", determinants[i]);
         fprintf(sorted, "\n");
     }
 
@@ -321,10 +388,7 @@ void test(FILE *output, FILE *initial, FILE *sorted) {
         free(matrices[i]);
     }
     free(matrices);
-
     free(determinants);
-    free(determinants_copy);
-    free(tics);
     free(sizes);
     free(indexes);
 }
