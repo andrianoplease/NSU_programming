@@ -170,10 +170,11 @@ void compare_launches(void (*sort) (int, int, int)) {
     }
 
     sorted = fopen("sorted.txt", "w");
-    if (input == NULL) {
+    if (sorted == NULL) {
         printf("Can't open file sorted.txt");
         return 1;
     }
+
     int matrices_amount = 0;
     fscanf(input, "%d", &matrices_amount);
 
