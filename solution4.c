@@ -10,30 +10,33 @@
 
 typedef struct Student_ {
     int number;
-    int point[AMOUNT_OF_POINTS];
+    int points[AMOUNT_OF_POINTS];
 } Student;
 
-typedef struct List_ {
-    struct List_ *next;
+typedef struct Node_ {
+    struct Node_ *next;
     Student *student;
-} List;
+} Node;
 
 typedef struct Tnode_ {
     struct Tnode_ *left;
     struct Tnode_ *right;
+    struct Tnode_ *parent;
     int key;
-    List *val;
+    Node *val;
 } Tnode;
 
-List *find_and_pop_list(List **, int);
-Student *find_and_pop_tree(Tnode *, int);
-int list_size(List *);
+Node *find_and_pop_from_list(Node **, int);
+Student *find_and_pop_from_tree(Tnode *, int);
+int list_size(Node *);
 Tnode *add_to_tree1(Tnode *, Student *, int);
 Tnode *add_to_tree(Tnode *, Student *);
-void destroy_list(List *);
+void destroy_list(Node *);
 void destroy_tree(Tnode *);
 Tnode *cut(Tnode *, int);
 int tree_size(Tnode *);
+void delete_Tnode(Tnode **);
+Tnode *find_max_Tnode(Tnode *);
 
 int main() {
     FILE *input, *output;
@@ -50,17 +53,17 @@ int main() {
 
     Tnode *t = NULL;
     char string[MAXN];
-    
+
     fgets(string, MAXN, input);
     fgets(string, MAXN, input);
     while (!isalpha(string[0])) {
         char *token = strtok(string, " ");
         Student *s = (Student *)malloc(sizeof(Student));
-        if (!s) exit (-1);
+        if (!s) exit(-1);
         s->number = atoi(token);
         for (int i = 0; i < AMOUNT_OF_POINTS; i++) {
             token = strtok(NULL, " ");
-            s->point[i] = atoi(token);
+            s->points[i] = atoi(token);
         }
         t = add_to_tree(t, s);
         fgets(string, MAXN, input);
@@ -71,9 +74,9 @@ int main() {
         int n = 0;
         int id = 0;
         int p = 0;
-        sscanf(string, "%d %d %d", &n, &id, &p);
-        Student *s = find_and_pop_tree(t, n);
-        s->point[id] = p;
+        sscanf(string, "%d %d %d", &id, &n, &p);
+        Student *s = find_and_pop_from_tree(t, id);
+        s->points[n] = p;
         t = add_to_tree(t, s);
         fgets(string, MAXN, input);
     }
@@ -97,19 +100,19 @@ int main() {
     return 0;
 }
 
-List *add_to_list(List *l, Student *student) {
-    List *new_node = (List *)malloc(sizeof(List));
+Node *add_to_list(Node *l, Student *student) {
+    Node *new_node = (Node *)malloc(sizeof(Node));
     if (!new_node) exit(-1);
     new_node->next = l;
     new_node->student = student;
     return new_node;
 }
 
-List *find_and_pop_list(List **l, int student_id) {
-    List **v = l;
+Node *find_and_pop_from_list(Node **l, int student_id) {
+    Node **v = l;
     while (*v) {
         if ((*v)->student->number == student_id) {
-            List *res = *v;
+            Node *res = *v;
             *v = (*v)->next;
             return res;
         }
@@ -118,20 +121,81 @@ List *find_and_pop_list(List **l, int student_id) {
     return NULL;
 }
 
-Student *find_and_pop_tree(Tnode *t, int student_id) {
+Student *find_and_pop_from_tree(Tnode *t, int student_id) {
     if (!t) return NULL;
-    List *l = find_and_pop_list(&(t->val), student_id);
+    Node *l = find_and_pop_from_list(&(t->val), student_id);
     if (l) {
+        if (t->val == NULL) {
+            delete_Tnode(&t);
+        }
         Student *s = l->student;
         free(l);
         return s;
     }
-    Student *s = find_and_pop_tree(t->left, student_id);
+    Student *s = find_and_pop_from_tree(t->left, student_id);
     if (s) return s;
-    return find_and_pop_tree(t->right, student_id);
+    return find_and_pop_from_tree(t->right, student_id);
 }
 
-int list_size(List *l) {
+void delete_Tnode(Tnode **t) {
+    Tnode *left = (*t)->left;
+    Tnode *right = (*t)->right;
+    Tnode *parent = (*t)->parent;
+
+    if (left && right) {
+        Tnode *local_max = find_max_Tnode(left);
+        (*t)->key = local_max->key;
+        delete_Tnode(&local_max);
+    }
+    else if (left) {
+        if (*t == parent->left) {
+            free(*t);
+            parent->left = left;
+            left->parent = parent;
+        }
+        else {
+            free(*t);
+            parent->right = left;
+            left->parent = parent;
+        }
+    }
+    else if (right) {
+        if ((*t) == parent->left) {
+            free(*t);
+            parent->left = right;
+            right->parent = parent;
+        }
+        else {
+            if ((*t) == parent->left) {
+                free(*t);
+                parent->left = NULL;
+            }
+            else {
+                free(*t);
+                parent->right = NULL;
+            }
+        }
+    }
+    else {
+        if ((*t) == parent->left) {
+            free(*t);
+            parent->left = NULL;
+        }
+        else {
+            free(*t);
+            parent->right = NULL;
+        }
+    }
+}
+
+Tnode *find_max_Tnode(Tnode *t) {
+    while (t->right) {
+        t = t->right;
+    }
+    return t;
+}
+
+int list_size(Node *l) {
     if (!l) return 0;
     return 1 + list_size(l->next);
 }
@@ -139,10 +203,11 @@ int list_size(List *l) {
 Tnode *add_to_tree1(Tnode *t, Student *s, int sum) {
     if (!t) {
         Tnode *new_node = (Tnode *)malloc(sizeof(Tnode));
-        List *l = add_to_list(NULL, s);
-        if (!new_node || !l) exit(-1); 
+        Node *l = add_to_list(NULL, s);
+        if (!new_node || !l) exit(-1);
         new_node->left = NULL;
         new_node->right = NULL;
+        new_node->parent = NULL;
         new_node->key = sum;
         new_node->val = l;
         return new_node;
@@ -152,9 +217,11 @@ Tnode *add_to_tree1(Tnode *t, Student *s, int sum) {
     }
     else if (sum < t->key) {
         t->left = add_to_tree1(t->left, s, sum);
+        t->left->parent = t;
     }
     else {
         t->right = add_to_tree1(t->right, s, sum);
+        t->right->parent = t;
     }
     return t;
 }
@@ -162,12 +229,12 @@ Tnode *add_to_tree1(Tnode *t, Student *s, int sum) {
 Tnode *add_to_tree(Tnode *t, Student *s) {
     int sum = 0;
     for (int i = 0; i < AMOUNT_OF_POINTS; ++i) {
-        sum += s->point[i];
+        sum += s->points[i];
     }
     return add_to_tree1(t, s, sum);
 }
 
-void destroy_list(List *l) {
+void destroy_list(Node *l) {
     if (!l) return;
     destroy_list(l->next);
     free(l->student);
