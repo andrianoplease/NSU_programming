@@ -22,6 +22,7 @@ typedef struct Tnode_ {
     struct Tnode_ *left;
     struct Tnode_ *right;
     struct Tnode_ *parent;
+    int height;
     int key;
     Node *val;
 } Tnode;
@@ -35,6 +36,12 @@ void destroy_list(Node *);
 void destroy_tree(Tnode *);
 Tnode *cut(Tnode *, int);
 int tree_size(Tnode *);
+int height(Tnode *);
+int balance_factor(Tnode *);
+void fix_height(Tnode *);
+Tnode *rotate_right(Tnode *);
+Tnode *rotate_left(Tnode *);
+Tnode *balance(Tnode *);
 void delete_Tnode(Tnode **);
 Tnode *find_max_Tnode(Tnode *);
 
@@ -100,6 +107,120 @@ int main() {
     return 0;
 }
 
+int height(Tnode *t) {
+    return t ? t->height : 0;
+}
+
+int balance_factor(Tnode *t) {
+    return height(t->right) - height(t->left);
+}
+
+void fix_height(Tnode *t) {
+    int height_left = height(t->left);
+    int height_right = height(t->right);
+    t->height = (height_left > height_right ? height_left : height_right) + 1;
+}
+
+Tnode *rotate_right(Tnode *t) {
+    Tnode *left = t->left;
+    t->left = left->right;
+    left->right = t;
+    fix_height(t);
+    fix_height(left);
+    return left;
+}
+
+Tnode *rotate_left(Tnode *t) {
+    Tnode *right = t->right;
+    t->right = right->left;
+    right->left = t;
+    fix_height(t);
+    fix_height(right);
+    return right;
+}
+
+Tnode *balance(Tnode *t) {
+    fix_height(t);
+    if (balance_factor(t) == 2) {
+        if (balance_factor(t->right) < 0) {
+            t->right = rotate_right(t->right);
+        }
+        return rotate_left(t);
+    }
+    if (balance_factor(t) == -2) {
+        if (balance_factor(t->left) > 0) {
+            t->left = rotate_left(t->left);
+        }
+        return rotate_right(t);
+    }
+    return t;
+}
+
+void delete_Tnode(Tnode **t) {
+    Tnode *left = (*t)->left;
+    Tnode *right = (*t)->right;
+    Tnode *parent = (*t)->parent;
+
+    if (left && right) {
+        Tnode *local_max = find_max_Tnode(left);
+        (*t)->key = local_max->key;
+        delete_Tnode(&local_max);
+    }
+    else if (left) {
+        if (*t == parent->left) {
+            balance(*t);
+            free(*t);
+            parent->left = left;
+            left->parent = parent;
+        }
+        else {
+            balance(*t);
+            free(*t);
+            parent->right = left;
+            left->parent = parent;
+        }
+    }
+    else if (right) {
+        if ((*t) == parent->left) {
+            balance(*t);
+            free(*t);
+            parent->left = right;
+            right->parent = parent;
+        }
+        else {
+            if ((*t) == parent->left) {
+                balance(*t);
+                free(*t);
+                parent->left = NULL;
+            }
+            else {
+                balance(*t);
+                free(*t);
+                parent->right = NULL;
+            }
+        }
+    }
+    else {
+        if ((*t) == parent->left) {
+            balance(*t);
+            free(*t);
+            parent->left = NULL;
+        }
+        else {
+            balance(*t);
+            free(*t);
+            parent->right = NULL;
+        }
+    }
+}
+
+Tnode *find_max_Tnode(Tnode *t) {
+    while (t->right) {
+        t = t->right;
+    }
+    return t;
+}
+
 Node *add_to_list(Node *l, Student *student) {
     Node *new_node = (Node *)malloc(sizeof(Node));
     if (!new_node) exit(-1);
@@ -137,64 +258,6 @@ Student *find_and_pop_from_tree(Tnode *t, int student_id) {
     return find_and_pop_from_tree(t->right, student_id);
 }
 
-void delete_Tnode(Tnode **t) {
-    Tnode *left = (*t)->left;
-    Tnode *right = (*t)->right;
-    Tnode *parent = (*t)->parent;
-
-    if (left && right) {
-        Tnode *local_max = find_max_Tnode(left);
-        (*t)->key = local_max->key;
-        delete_Tnode(&local_max);
-    }
-    else if (left) {
-        if (*t == parent->left) {
-            free(*t);
-            parent->left = left;
-            left->parent = parent;
-        }
-        else {
-            free(*t);
-            parent->right = left;
-            left->parent = parent;
-        }
-    }
-    else if (right) {
-        if ((*t) == parent->left) {
-            free(*t);
-            parent->left = right;
-            right->parent = parent;
-        }
-        else {
-            if ((*t) == parent->left) {
-                free(*t);
-                parent->left = NULL;
-            }
-            else {
-                free(*t);
-                parent->right = NULL;
-            }
-        }
-    }
-    else {
-        if ((*t) == parent->left) {
-            free(*t);
-            parent->left = NULL;
-        }
-        else {
-            free(*t);
-            parent->right = NULL;
-        }
-    }
-}
-
-Tnode *find_max_Tnode(Tnode *t) {
-    while (t->right) {
-        t = t->right;
-    }
-    return t;
-}
-
 int list_size(Node *l) {
     if (!l) return 0;
     return 1 + list_size(l->next);
@@ -210,6 +273,7 @@ Tnode *add_to_tree1(Tnode *t, Student *s, int sum) {
         new_node->parent = NULL;
         new_node->key = sum;
         new_node->val = l;
+        new_node->height = 0;
         return new_node;
     }
     if (sum == t->key) {
@@ -223,7 +287,7 @@ Tnode *add_to_tree1(Tnode *t, Student *s, int sum) {
         t->right = add_to_tree1(t->right, s, sum);
         t->right->parent = t;
     }
-    return t;
+    return balance(t);
 }
 
 Tnode *add_to_tree(Tnode *t, Student *s) {
