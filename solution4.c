@@ -138,9 +138,17 @@ Student *find_and_pop_from_tree(Tnode *t, int student_id) {
 }
 
 void delete_Tnode(Tnode **t) {
+    if (!t) return;
+
     Tnode *left = (*t)->left;
     Tnode *right = (*t)->right;
     Tnode *parent = (*t)->parent;
+
+    if (parent == NULL) {
+        *t = find_max_Tnode(left);
+        free(*t);
+        return;
+    }
 
     if (left && right) {
         Tnode *local_max = find_max_Tnode(left);
@@ -189,6 +197,7 @@ void delete_Tnode(Tnode **t) {
 }
 
 Tnode *find_max_Tnode(Tnode *t) {
+    if (!t) return NULL;
     while (t->right) {
         t = t->right;
     }
